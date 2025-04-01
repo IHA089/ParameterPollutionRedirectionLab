@@ -8,8 +8,8 @@ import uuid, datetime, sqlite3, hashlib, random, os, secrets, requests, string, 
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
-lab_type = ""#OpenRedirection"
-lab_name = ""#ParameterPollutionRedirectionLab"
+lab_type = "OpenRedirection"
+lab_name = "ParameterPollutionRedirectionLab"
 
 user_data = {}
 
@@ -508,5 +508,3 @@ def add_cache_control_headers(response):
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
     return response
-
-ParameterPollutionRedirection.run("127.0.0.1", 5000)
