@@ -3,7 +3,7 @@ from flask import Flask, request, make_response, render_template, session, jsoni
 from functools import wraps
 import jwt as pyjwt
 from collections import defaultdict
-import uuid, datetime, sqlite3, hashlib, random, os, secrets, requests, string, time
+import uuid, datetime, sqlite3, hashlib, random, os, secrets, requests, string, time, urllib3, re
 
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
@@ -15,6 +15,8 @@ user_data = {}
 
 ParameterPollutionRedirection = Flask(__name__)
 ParameterPollutionRedirection.secret_key = "vulnerable_lab_by_IHA089"
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 JWT_SECRET = "MoneyIsPower"
 
@@ -140,6 +142,10 @@ def acceptable_html():
         session.clear()
     return render_template('acceptable.html', user=session.get('user'))
 
+@ParameterPollutionRedirection.route('/check.html')
+def check_html():
+    return render_template('check.html', user=session.get('user'))
+
 @ParameterPollutionRedirection.route('/term.html')
 def term_html():
     if not check_cookies():
@@ -223,7 +229,7 @@ def resend():
                     "bodycontent":bdcontent
                 }
         try:
-            k = requests.post(mail_server, json = payload)
+            k = requests.post(mail_server, json = payload, verify=False)
         except:
             return jsonify({"error": "Mail server is not responding"}), 500
         error_message="code sent"
@@ -293,6 +299,20 @@ def login():
 
     error_message = "Invalid username or password. Please try again."
     return render_template('login.html', error=error_message)
+
+@ParameterPollutionRedirection.route('/check', methods=['POST'])
+def check():
+    session_code = request.form.get('redirectionurl')
+    
+    pattern = r"^https://iha089-labs\.in/login\?next=.*&next=.*$"
+    if bool(re.match(pattern, session_code)) is True: 
+        attc_dom = session_code.split("next=")[-1]
+        if "iha089-labs.in" not in attc_dom:
+            return render_template('success.html', user=session.get('user'))
+        else:
+            return render_template('check.html', error="Invalid redirection url")
+    else:
+        return render_template('check.html', error="Invalid redirection url")
 
 @ParameterPollutionRedirection.route('/resetpassword', methods=['POST'])
 def resetpassword():
@@ -365,7 +385,7 @@ def join():
                     "bodycontent":bdcontent
                 }
         try:
-            k = requests.post(mail_server, json = payload)
+            k = requests.post(mail_server, json = payload, verify=False)
         except:
             return jsonify({"error": "Mail server is not responding"}), 500
 
@@ -436,7 +456,7 @@ def forgot():
                             "bodycontent":bdcontent
                     }
                 try:
-                    k = requests.post(mail_server, json = payload)
+                    k = requests.post(mail_server, json = payload, verify=False)
                 except:
                     return jsonify({"error": "Mail server is not responding"}), 500  
             else:
